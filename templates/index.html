@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title> Real-Time OGD</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles.css') }}">
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"
+        integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
+        crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <h1>Real-Time OpenGameData Visualization</h1>
+    <div class="table-container">
+        <div class="selector-container">
+            <form>
+                <label for="toggle">Choose a game:</label>
+                <select id="toggle" name="toggle" onchange="selectGame(this.value)">
+                    <option selected>aqualab</option>
+                    <option>icecube</option>
+                    <option>journalism</option>
+                    <option>mashopolis</option>
+                    <option>penguins</option>
+                    <option>bacteria</option>
+                    <option>balloon</option>
+                    <option>crystal</option>
+                    <option>cycle_carbon</option>
+                    <option>cycle_nitrogen</option>
+                    <option>cycle_water</option>
+                    <option>earthquake</option>
+                    <option>jowilder</option>
+                    <option>lakeland</option>
+                    <option>magnet</option>
+                    <option>waves</option>
+                    <option>wind</option>
+                </select>
+            </form>
+        </div>
+        <div class="filter-container">
+            <label for="filter">Filter: </label>
+            <input type="text" id="filter" placeholder="Enter filter text" onkeyup="filterTable()">
+        </div>
+
+        <div class="table-container">
+            <table id="logger-table" border="1">
+                <thead>
+                    <tr>
+                        <th>app_id</th>
+                        <th>app_branch</th>
+                        <th>app_version</th>
+                        <th>log_version</th>
+                        <th>client_time</th>
+                        <th>user_id</th>
+                        <th>session_id</th>
+                        <th>event_name</th>
+                        <th>event_data</th>
+                        <th>game_state</th>
+                        <th>user_data</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // note that socket has to be variable in order to have both flask-socketio and flask-restful working
+        var socket = io.connect('http://127.0.0.1:5000');
+
+        // when a client is connected, print it
+        socket.on('connect', () => {
+            console.log('Connected to the server');
+        });
+
+        // if socketio receives a new logger_data event, add a table row
+        socket.on('logger_data', function (data) {
+            addTableRow(data);
+        });
+
+        const tableHeaders = [
+            "app_id",
+            "app_branch",
+            "app_version",
+            "log_version",
+            "client_time",
+            "user_id",
+            "session_id",
+            "event_name",
+            "event_data",
+            "game_state",
+            "user_data"
+        ]
+
+        const MAX_DATA_ROWS = 10;
+
+        // if the current row cells contain the filterText, display it in the table
+        function shouldShow(cells, filterText) {
+            let shouldShow = false;
+            for (let j = 0; j < cells.length; j++) {
+                const cellText = cells[j].textContent.toLowerCase();
+                if (cellText.includes(filterText)) {
+                    shouldShow = true;
+                    break;
+                }
+            }
+            return shouldShow;
+        }
+
+        // Add a new data row to the table
+        function addTableRow(data) {
+            
+            // if the table row length is LARGER than MAX_DATA_ROWS, delete the last row
+            const table = document.getElementById('logger-table').getElementsByTagName('tbody')[0];
+            if (table.rows.length > MAX_DATA_ROWS) {
+                console.log(table.rows.length);
+                var lastIndex = table.rows.length - 1;
+                table.deleteRow(lastIndex);
+            }
+
+            // insert a new table row
+            const newRow = table.insertRow(0);
+            newRow.style.display = 'none';
+            for (const header of tableHeaders) {
+                const cell = newRow.insertCell();
+                cell.textContent = data.hasOwnProperty(header) ? data[header] : 'NA';
+                if (header === "event_name" && data.hasOwnProperty("event")) {
+                    cell.textContent = data["event"];
+                }
+            }
+
+            // if the table is filtering, only reserve the incoming data that can be filtered
+            const cells = newRow.getElementsByTagName('td');
+            const filterText = document.getElementById('filter').value.toLowerCase();
+            if (filterText === '' || shouldShow(cells, filterText)) newRow.style.display = '';
+
+        }
+
+
+        // Filter the table rows based on the filter text
+        function filterTable() {
+            const filterText = document.getElementById('filter').value.toLowerCase();
+            const table = document.getElementById('logger-table').getElementsByTagName('tbody')[0];
+            const rows = table.getElementsByTagName('tr');
+
+            // if any row contains the filter text, display it
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                rows[i].style.display = shouldShow(cells, filterText) ? '' : 'none';
+            }
+        }
+
+        // clear all table rows
+        function clearTable() {
+            var table = document.getElementById('logger-table');
+            var tbody = table.querySelector('tbody');
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+        }
+
+        // after the selector changes to a new game
+        function selectGame(selectedGame) {
+            clearTable();
+            socket.emit("game_selector_changed", selectedGame);
+        }
+
+    </script>
+</body>
+
+</html>
