@@ -59,7 +59,7 @@ def _logImportErr(msg:str, err:Exception):
 
 
 try:
-    from apis.GameStateAPI import GameStateAPI
+    from apis.player_game_state.GameStateAPI import GameStateAPI
 except ImportError as err:
     _logImportErr(msg="Could not import GameState API:", err=err)
 except Exception as err:
@@ -68,7 +68,7 @@ else:
     GameStateAPI.register(application)
 
 try:
-    from apis.PlayerIDAPI import PlayerIDAPI
+    from apis.player_game_state.PlayerIDAPI import PlayerIDAPI
 except ImportError as err:
     _logImportErr(msg="Could not import Player ID API:", err=err)
 except Exception as err:

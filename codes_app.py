@@ -57,7 +57,7 @@ def _logImportErr(msg:str, err:Exception):
     application.logger.exception(err)
 
 try:
-    from apis.CodingAPI import CodingAPI
+    from apis.codes.CodingAPI import CodingAPI
 except ImportError as err:
     _logImportErr(msg="Could not import Coding API:", err=err)
 except Exception as err:

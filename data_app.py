@@ -57,7 +57,7 @@ def _logImportErr(msg:str, err:Exception):
     application.logger.exception(err)
 
 try:
-    from apis.ClassroomAPI import ClassroomAPI
+    from apis.data.ClassroomAPI import ClassroomAPI
 except ImportError as err:
     _logImportErr(msg="Could not import Classroom API:", err=err)
 except Exception as err:
@@ -66,7 +66,7 @@ else:
     ClassroomAPI.register(application)
 
 try:
-    from apis.PopulationAPI import PopulationAPI
+    from apis.data.PopulationAPI import PopulationAPI
 except ImportError as err:
     _logImportErr(msg="Could not import Population API:", err=err)
 except Exception as err:
@@ -75,7 +75,7 @@ else:
     PopulationAPI.register(application)
 
 try:
-    from apis.PlayerAPI import PlayerAPI
+    from apis.data.PlayerAPI import PlayerAPI
 except ImportError as err:
     _logImportErr(msg="Could not import Player API:", err=err)
 except Exception as err:
@@ -84,7 +84,7 @@ else:
     PlayerAPI.register(application)
 
 try:
-    from apis.SessionAPI import SessionAPI
+    from apis.data.SessionAPI import SessionAPI
 except ImportError as err:
     _logImportErr(msg="Could not import Session API:", err=err)
 except Exception as err:
