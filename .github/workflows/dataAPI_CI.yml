@@ -1,5 +1,5 @@
 # Workflow to build and deploy designer dashboard to server.
-name: OpenGameData-APIs CI
+name: OpenGameData Data API CI
 on:
   # push:
     # paths:
