@@ -1,0 +1,84 @@
+# Workflow to build and deploy designer dashboard to server.
+name: OpenGameData-APIs CI
+on:
+  # push:
+    # paths:
+    # - '.github/workflows/codesAPI_CI.yml'
+    # - '.github/actions/**'
+    # - 'config/**'
+    # - 'apis/codes/**'
+    # - 'codes_app.py'
+  workflow_dispatch: # Allow manual trigger of this workflow from the Actions tab
+
+env:
+  CI: ""
+  TARGET_PATH: ${{ vars.WEB_PATH }}${{ github.event.repository.name }}/${{ github.ref_name }}/codes
+  TARGET_HOST: ${{ vars.OGD_STAGING_HOST }}
+
+jobs:
+  ci_deploy:
+    name: CI Deploy of Feature APIs
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Config File
+      uses: ./.github/actions/apis_config
+      with:
+        db_host: ${{ vars.OGD_LOGGER_HOST }}
+        db_user: ${{secrets.SQL_USER}}
+        db_pass: ${{secrets.SQL_PASS}}
+        id_gen_db_name: ${{ secrets.DBNAME_ID_GEN }}
+        fd_users_db_name: ${{ secrets.DBNAME_FD_USERS }}
+    - name: Get OpenConnect installed
+      run: sudo apt-get -q update && sudo apt-get -q install openconnect
+    - name: Connect VPN
+      run: echo ${{ secrets.VPN_PASS }} | sudo openconnect --protocol=gp -u ${{ secrets.VPN_USER }} --passwd-on-stdin soe.vpn.wisc.edu &
+    - name: Upload API to web server via rsync
+      uses: burnett01/rsync-deployments@5.2
+      with:
+        switches: -vrc --exclude-from rsync-exclude
+        path: apis/data/*
+        remote_path: ${{ env.TARGET_PATH }}
+        remote_host: ${{ env.TARGET_HOST }}
+        remote_user: ${{ secrets.DEPLOY_USER }}
+        remote_key:  ${{ secrets.DEPLOY_KEY  }}
+    - name: Upload API classes to web server via rsync
+      uses: burnett01/rsync-deployments@5.2
+      with:
+        switches: -vrc --exclude-from rsync-exclude
+        path: apis/API*.py
+        remote_path: ${{ env.TARGET_PATH }}
+        remote_host: ${{ env.TARGET_HOST }}
+        remote_user: ${{ secrets.DEPLOY_USER }}
+        remote_key:  ${{ secrets.DEPLOY_KEY  }}
+    - name: Upload config to web server via rsync
+      uses: burnett01/rsync-deployments@5.2
+      with:
+        switches: -vrc --exclude-from rsync-exclude
+        path: config/*
+        remote_path: ${{ env.TARGET_PATH }}
+        remote_host: ${{ env.TARGET_HOST }}
+        remote_user: ${{ secrets.DEPLOY_USER }}
+        remote_key:  ${{ secrets.DEPLOY_KEY  }}
+    - name: Upload app to web server via rsync
+      uses: burnett01/rsync-deployments@5.2
+      with:
+        switches: -vrc --exclude-from rsync-exclude
+        path: data_app.py
+        remote_path: ${{ env.TARGET_PATH }}
+        remote_host: ${{ env.TARGET_HOST }}
+        remote_user: ${{ secrets.DEPLOY_USER }}
+        remote_key:  ${{ secrets.DEPLOY_KEY  }}
+    - name: Upload wsgi to web server via rsync
+      uses: burnett01/rsync-deployments@5.2
+      with:
+        switches: -vrc --exclude-from rsync-exclude
+        path: data.wsgi
+        remote_path: ${{ env.TARGET_PATH }}
+        remote_host: ${{ env.TARGET_HOST }}
+        remote_user: ${{ secrets.DEPLOY_USER }}
+        remote_key:  ${{ secrets.DEPLOY_KEY  }}
+    - name: Upload logs as artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        path: ./*.log
